@@ -1,5 +1,5 @@
 const config = {
-  PORT: process.env.PORT || 3030,
+  PORT: 8181,
   ORIGIN: process.env.ORIGIN || '*',
   JWT_KEY: process.env.JWT_KEY || 'jwtsecret',
   DB_HOST: process.env.DB_HOST || 'localhost',
