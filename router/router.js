@@ -23,11 +23,14 @@ module.exports = async function(fastify, opts) {
     // some code
     const { body } = req;
     try {
+      
+      const data = await userService.login(body)
       const token = fastify.jwt.sign({
         email: body.email,
-        role: 'member'
-      })
-      const data = await userService.login(body, token)
+        schemaName: data.schemaName
+      });
+      delete data.schemaName;
+      data.token = token;
       reply.send(successRes(data))
     } catch (err) {
       console.log('err', err);

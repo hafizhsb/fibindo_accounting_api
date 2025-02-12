@@ -5,12 +5,12 @@ const dbLib = require('../lib/db');
 const { generateInternalToken, generatePassword, verifyPassword } = require('../lib/auth');
 const { send } = require('../lib/mail');
 
-const login = async (body, token) => {
+const login = async (body) => {
   try {
     const { db, pgpHelpers } = dbLib;
     const { email, password } = body;
     
-    const member = await db.oneOrNone('select * from member where email = $1', [email]);
+    const member = await db.oneOrNone('select * from users where email = $1', [email]);
     if (!member) {
       throw new Error('Email tidak terdaftar');
     }
@@ -24,22 +24,22 @@ const login = async (body, token) => {
       throw new Error('Akun anda sudah dihapus');
     }
 
-    if (!member.is_active) {
-      throw new Error('Akun anda belum diaktifkan');
-    }
+    // if (!member.is_active) {
+    //   throw new Error('Akun anda belum diaktifkan');
+    // }
 
-    if (!member.is_verified) {
-      throw new Error('Silahkan verifikasi email anda');
-    }
+    // if (!member.is_verified) {
+    //   throw new Error('Silahkan verifikasi email anda');
+    // }
 
-    await db.query('update member set is_logged_in = true, last_login = now() where id = $1', member.id);
+    await db.query('update users set is_logged_in = true, last_login = now() where id = $1', member.id);
 
     const data = {
       email: member.email,
       fullname: member.fullname,
       company_name: member.company_name,
       phone: member.phone,
-      token
+      schemaName: member.schema_name
     }
     return data;
   } catch (err) {
