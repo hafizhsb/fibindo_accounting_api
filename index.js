@@ -7,6 +7,7 @@ const router = require('./router/router');
 const accountRoute = require('./router/account-route');
 const contactRoute = require('./router/contact-route');
 const journalRoute = require('./router/journal-route');
+const ledgerRoute = require('./router/ledger-route');
 const { migrateDb } = require('./lib/db');
 
 // file uploads
@@ -29,6 +30,7 @@ fastify.register(router);
 fastify.register(accountRoute, { prefix: '/accounts'})
 fastify.register(contactRoute, { prefix: '/contacts'})
 fastify.register(journalRoute, { prefix: '/journals'})
+fastify.register(ledgerRoute, { prefix: '/ledger'})
 
 //cross-origin
 fastify.register(require('@fastify/cors'), {
@@ -52,7 +54,7 @@ fastify.addContentTypeParser('application/json', { parseAs: 'string' }, (req, bo
 // migrateDb();
 
 // Run the server!
-fastify.listen({ port: 8181 }, function (err, address) {
+fastify.listen({ port: 8080 }, function (err, address) {
   if (err) {
     fastify.log.error(err)
     process.exit(1)
