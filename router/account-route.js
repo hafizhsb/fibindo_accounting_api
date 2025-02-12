@@ -3,10 +3,14 @@ const { successRes, errorRes } = require('../plugins/reply');
 const accountService = require('../service/account.service');
 
 module.exports = async function(fastify, opts) {
-  fastify.get('/coa', async (req, reply) => {
+  fastify.get('/coa',
+    {
+      onRequest: [fastify.authenticate]
+    },
+    async (req, reply) => {
     try {
       const { page, page_size } = req.query;
-      const { data, count} = await accountService.list(page, page_size);
+      const { data, count} = await accountService.list(req, page, page_size);
       reply.send(successRes(data, count))
     } catch (err) {
       console.log('err', err);
@@ -14,10 +18,13 @@ module.exports = async function(fastify, opts) {
     }
   })
 
-  fastify.get('/coa/:id', async (req, reply) => {
+  fastify.get('/coa/:id',
+    {
+      onRequest: [fastify.authenticate]
+    },
+    async (req, reply) => {
     try {
-      const { id } = req.params;
-      const row = await accountService.getAccountDetail(id)
+      const row = await accountService.getAccountDetail(req)
       reply.send(successRes(row))
     } catch (err) {
       console.log('err', err);
@@ -25,10 +32,13 @@ module.exports = async function(fastify, opts) {
     }
   })
 
-  fastify.post('/coa', async (req, reply) => {
+  fastify.post('/coa',
+    {
+      onRequest: [fastify.authenticate]
+    },
+    async (req, reply) => {
     try {
-      const { body } = req;
-      await accountService.createAccount(body);
+      await accountService.createAccount(req);
       reply.send(successRes())
     } catch (err) {
       console.log('err', err);
@@ -36,12 +46,13 @@ module.exports = async function(fastify, opts) {
     }
   })
 
-  fastify.put('/coa/:id', async (req, reply) => {
+  fastify.put('/coa/:id',
+    {
+      onRequest: [fastify.authenticate]
+    },
+    async (req, reply) => {
     try {
-      const { id } = req.params;
-      const { body } = req;
-      console.log('reqqq', id, body);
-      await accountService.updateAccount(id, body)
+      await accountService.updateAccount(req)
       reply.send(successRes())
     } catch (err) {
       console.log('err', err);
@@ -50,10 +61,13 @@ module.exports = async function(fastify, opts) {
   })
 
   // Opening Balance
-  fastify.get('/opening-balance', async (req, reply) => {
+  fastify.get('/opening-balance',
+    {
+      onRequest: [fastify.authenticate]
+    },
+    async (req, reply) => {
     try {
-      const { page, page_size } = req.query;
-      const { data, count} = await accountService.listOpeningBalance(page, page_size);
+      const { data, count} = await accountService.listOpeningBalance(req);
       reply.send(successRes(data, count))
     } catch (err) {
       console.log('err', err);
@@ -61,12 +75,13 @@ module.exports = async function(fastify, opts) {
     }
   })
 
-  fastify.put('/opening-balance/:id', async (req, reply) => {
+  fastify.put('/opening-balance/:id',
+    {
+      onRequest: [fastify.authenticate]
+    },
+    async (req, reply) => {
     try {
-      const { id } = req.params;
-      const { body } = req;
-      console.log('reqqq', id, body);
-      await accountService.updateOpeningBalance(id, body)
+      await accountService.updateOpeningBalance(req)
       reply.send(successRes())
     } catch (err) {
       console.log('err', err);
