@@ -54,7 +54,7 @@ fastify.addContentTypeParser('application/json', { parseAs: 'string' }, (req, bo
 // migrateDb();
 
 // Run the server!
-fastify.listen({ port: 8080 }, function (err, address) {
+fastify.listen({ port: 8181 }, function (err, address) {
   if (err) {
     fastify.log.error(err)
     process.exit(1)
