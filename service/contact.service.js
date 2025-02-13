@@ -3,8 +3,11 @@ const pgp = require('pg-promise');
 const config = require('../config');
 const dbLib = require('../lib/db');
 
-const list = async (page, pageSize) => {
+const list = async (req) => {
   const { db } = dbLib;
+  const { page, page_size: pageSize } = req.query;
+  const { schemaName  } = req.user;
+
   let limit = pageSize && parseInt(pageSize) || 10;
   let offset = 0;
   let limitQuery = '';
@@ -15,14 +18,14 @@ const list = async (page, pageSize) => {
 
   const data =  await db.query(`
     select *
-    from contact
+    from ${schemaName}.contact
     order by contact_name asc
     ${limitQuery}
   `, [limit, offset]);
 
   const count = await db.oneOrNone(`
     select count(*)::int total
-    from contact
+    from ${schemaName}.contact
   `);
 
   return {
@@ -40,19 +43,26 @@ const getAccountDetail = async (id) => {
   `, [id]);
 }
 
-const updateContact = async (id, data) => {
+const updateContact = async (req) => {
   const { db, pgpHelpers } = dbLib;
+  const { id } = req.params;
+  const { body: data } = req;
+  const { schemaName  } = req.user;
+
+  console.log('reqqq', id, body);
   console.log('dataaaa', data);
   
-  const updateSql = pgpHelpers.update(data, null, 'contact') + `where contact_id = $1`;
+  const updateSql = pgpHelpers.update(data, null, { table: 'contact', schema: schemaName }) + `where contact_id = $1`;
   // console.log(updateSql)
   return db.none(updateSql, [id]);
 }
 
-const createContact = async (data) => {
+const createContact = async (req) => {
   const { db, pgpHelpers } = dbLib;
+  const { body: data } = req;
+  const { schemaName  } = req.user;
 
-  const sql = pgpHelpers.insert(data, null, 'contact');
+  const sql = pgpHelpers.insert(data, null, { table: 'contact', schema: schemaName });
   console.log('sqlll', sql);
   return db.oneOrNone(sql);
 }

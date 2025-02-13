@@ -3,10 +3,13 @@ const { successRes, errorRes } = require('../plugins/reply');
 const contactService = require('../service/contact.service');
 
 module.exports = async function(fastify, opts) {
-  fastify.get('/', async (req, reply) => {
+  fastify.get('/',
+    {
+      onRequest: [fastify.authenticate]
+    },
+    async (req, reply) => {
     try {
-      const { page, page_size } = req.query;
-      const { data, count} = await contactService.list(page, page_size);
+      const { data, count} = await contactService.list(req);
       reply.send(successRes(data, count))
     } catch (err) {
       console.log('err', err);
@@ -14,10 +17,13 @@ module.exports = async function(fastify, opts) {
     }
   })
 
-  fastify.get('/:id', async (req, reply) => {
+  fastify.get('/:id',
+    {
+      onRequest: [fastify.authenticate]
+    },
+    async (req, reply) => {
     try {
-      const { id } = req.params;
-      const row = await accountService.getAccountDetail(id)
+      const row = await accountService.getAccountDetail(req)
       reply.send(successRes(row))
     } catch (err) {
       console.log('err', err);
@@ -25,10 +31,13 @@ module.exports = async function(fastify, opts) {
     }
   })
 
-  fastify.post('/', async (req, reply) => {
+  fastify.post('/',
+    {
+      onRequest: [fastify.authenticate]
+    },
+    async (req, reply) => {
     try {
-      const { body } = req;
-      await contactService.createContact(body);
+      await contactService.createContact(req);
       reply.send(successRes())
     } catch (err) {
       console.log('err', err);
@@ -36,12 +45,13 @@ module.exports = async function(fastify, opts) {
     }
   })
 
-  fastify.put('/:id', async (req, reply) => {
+  fastify.put('/:id',
+    {
+      onRequest: [fastify.authenticate]
+    },
+    async (req, reply) => {
     try {
-      const { id } = req.params;
-      const { body } = req;
-      console.log('reqqq', id, body);
-      await contactService.updateContact(id, body)
+      await contactService.updateContact(req)
       reply.send(successRes())
     } catch (err) {
       console.log('err', err);

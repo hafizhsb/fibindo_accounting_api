@@ -127,6 +127,7 @@ const updateOpeningBalance = async (req) => {
   const { db, pgpHelpers } = dbLib;
   const { id } = req.params;
   const { body } = req;
+  const { schemaName  } = req.user;
   
   const updateSql = pgpHelpers.update(body, null, { table: 'journal_detail', schema: schemaName }) + `where journal_detail_id = $1`;
   // console.log(updateSql)
