@@ -41,14 +41,19 @@ CREATE INDEX idx_journal_header_list_search ON ${schemaName}.journal_header USIN
 CREATE INDEX idx_journal_header_trxdate ON ${schemaName}.journal_header USING btree (transaction_date);
 CREATE INDEX idx_jurnal_id ON ${schemaName}.journal_header USING btree (journal_id);
 
+
+-- bigamount
+CREATE DOMAIN ${schemaName}.bigamount AS numeric(20,4);
+
 -- journal detail
 CREATE TABLE ${schemaName}.journal_detail (
 	journal_detail_id serial4 NOT NULL,
 	journal_id int4 NOT NULL,
 	account_id int4 NOT NULL,
 	description citext NULL,
-	debit "bigamount" NULL,
-	credit "bigamount" NULL,
+	debit ${schemaName}."bigamount" NULL,
+	credit ${schemaName}."bigamount" NULL,
+	is_reconciled bool DEFAULT false NOT NULL,
 	is_reconciled bool DEFAULT false NOT NULL,
 	notes citext NULL,
 	CONSTRAINT pk_journal_detail PRIMARY KEY (journal_detail_id),
