@@ -4,10 +4,13 @@ const journalService = require('../service/journal.service');
 const contactService = require('../service/contact.service');
 
 module.exports = async function(fastify, opts) {
-  fastify.get('/', async (req, reply) => {
+  fastify.get('/',
+    {
+      onRequest: [fastify.authenticate]
+    },
+    async (req, reply) => {
     try {
-      const { page, page_size } = req.query;
-      const { data, count} = await journalService.list(page, page_size);
+      const { data, count} = await journalService.list(req);
       reply.send(successRes(data, count))
     } catch (err) {
       console.log('err', err);
@@ -26,10 +29,13 @@ module.exports = async function(fastify, opts) {
     }
   })
 
-  fastify.post('/', async (req, reply) => {
+  fastify.post('/',
+    {
+      onRequest: [fastify.authenticate]
+    },
+    async (req, reply) => {
     try {
-      const { body } = req;
-      await journalService.createJournal(body);
+      await journalService.createJournal(req);
       reply.send(successRes())
     } catch (err) {
       console.log('err', err);

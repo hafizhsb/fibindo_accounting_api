@@ -3,8 +3,11 @@ const pgp = require('pg-promise');
 const config = require('../config');
 const dbLib = require('../lib/db');
 
-const list = async (page, pageSize) => {
+const list = async (req) => {
   const { db } = dbLib;
+  const { page, page_size: pageSize } = req.query;
+  const { schemaName  } = req.user;
+
   let limit = pageSize && parseInt(pageSize) || 10;
   let offset = 0;
   let limitQuery = '';
@@ -18,16 +21,16 @@ const list = async (page, pageSize) => {
     lpad(jh.journal_id::varchar(50), 10,
       'GJ' || '-0000000000'
     ) as journal_no,
-    (select sum(debit) from journal_detail where journal_id = jh.journal_id ) as debit,
-    (select sum(credit) from journal_detail where journal_id = jh.journal_id ) as credit
-    from journal_header jh
+    (select sum(debit) from ${schemaName}.journal_detail where journal_id = jh.journal_id ) as debit,
+    (select sum(credit) from ${schemaName}.journal_detail where journal_id = jh.journal_id ) as credit
+    from ${schemaName}.journal_header jh
     order by transaction_date desc
     ${limitQuery}
   `, [limit, offset]);
 
   const count = await db.oneOrNone(`
     select count(*)::int total
-    from journal_header
+    from ${schemaName}.journal_header
   `);
 
   return {
@@ -54,8 +57,10 @@ const updateContact = async (id, data) => {
   return db.none(updateSql, [id]);
 }
 
-const createJournal = async (data) => {
+const createJournal = async (req) => {
   const { db, pgpHelpers } = dbLib;
+  const { body: data } = req;
+  const { schemaName  } = req.user;
 
   const sql = pgpHelpers.insert(data, null, 'contact');
   return db.tx(async (trx) => {
@@ -63,14 +68,14 @@ const createJournal = async (data) => {
       transaction_date: data.transaction_date,
       notes: data.notes,
       created_date: 'now()'
-    }, null, 'journal_header') + ' RETURNING journal_id';
+    }, null, { table: 'journal_header', schema: schemaName }) + ' RETURNING journal_id';
     const { journal_id } = await trx.oneOrNone(sqlJH);
 
     const details = data.items;
     details.forEach((detail) => {
       detail.journal_id =  journal_id;
     });
-    const sqlJD =  pgpHelpers.insert(details, ['account_id', 'journal_id', 'debit', 'credit', 'notes'], 'journal_detail')
+    const sqlJD =  pgpHelpers.insert(details, ['account_id', 'journal_id', 'debit', 'credit', 'notes'], { table: 'journal_detail', schema: schemaName })
 
     await trx.none(sqlJD);
   })
