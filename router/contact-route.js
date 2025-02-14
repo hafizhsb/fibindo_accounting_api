@@ -23,7 +23,7 @@ module.exports = async function(fastify, opts) {
     },
     async (req, reply) => {
     try {
-      const row = await accountService.getAccountDetail(req)
+      const row = await contactService.getContactDetail(req)
       reply.send(successRes(row))
     } catch (err) {
       console.log('err', err);

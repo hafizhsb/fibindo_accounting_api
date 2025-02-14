@@ -34,12 +34,15 @@ const list = async (req) => {
   }
 }
 
-const getAccountDetail = async (id) => {
+const getContactDetail = async (req) => {
   const { db } = dbLib;
+  const { id } = req.params;
+  const { schemaName  } = req.user;
+
   return db.oneOrNone(`
   select *
-  from contact
-  where account_id = $1
+  from ${schemaName}.contact
+  where contact_id = $1
   `, [id]);
 }
 
@@ -48,12 +51,9 @@ const updateContact = async (req) => {
   const { id } = req.params;
   const { body: data } = req;
   const { schemaName  } = req.user;
-
-  console.log('reqqq', id, body);
-  console.log('dataaaa', data);
-  
-  const updateSql = pgpHelpers.update(data, null, { table: 'contact', schema: schemaName }) + `where contact_id = $1`;
-  // console.log(updateSql)
+  console.log('dataaa', data);
+  const updateSql = pgpHelpers.update(data, null, { table: 'contact', schema: schemaName }) + ` where contact_id = $1`;
+  console.log(updateSql)
   return db.none(updateSql, [id]);
 }
 
@@ -69,7 +69,7 @@ const createContact = async (req) => {
 
 module.exports = {
   list,
-  getAccountDetail,
+  getContactDetail,
   updateContact,
   createContact
 }
