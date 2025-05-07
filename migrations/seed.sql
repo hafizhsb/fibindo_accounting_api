@@ -86,7 +86,7 @@ CREATE INDEX idx_acct_movement_transaction_date ON ${schemaName}.acct_movement U
 
 -- update_acct_movement();
 
-CREATE OR REPLACE FUNCTION public.update_acct_movement()
+CREATE OR REPLACE FUNCTION ${schemaName}.update_acct_movement()
  RETURNS trigger
  LANGUAGE plpgsql
 AS $function$
@@ -146,4 +146,20 @@ insert
     or
 update
     on
-    ${schemaName}.journal_detail for each row execute function update_acct_movement();
+    ${schemaName}.journal_detail for each row execute function ${schemaName}.update_acct_movement();
+
+
+
+-- account header
+CREATE TABLE IF NOT EXISTS ${schemaName}.account_header (
+	account_header_id serial4 NOT NULL,
+	account_header_code citext NOT NULL,
+	account_header_name citext NOT NULL,
+	is_ar bool NULL,
+	is_ap bool NULL,
+	is_active bool DEFAULT true NULL,
+	CONSTRAINT account_header_pk PRIMARY KEY (account_header_id)
+);
+
+ALTER TABLE ${schemaName}.coa ADD account_header_id int4 NULL;
+ALTER TABLE ${schemaName}.coa ADD CONSTRAINT coa_account_header_fk FOREIGN KEY (account_header_id) REFERENCES schema_1.account_header(account_header_id) ON DELETE RESTRICT ON UPDATE CASCADE;

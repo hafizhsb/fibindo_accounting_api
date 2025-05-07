@@ -86,6 +86,44 @@ const createAccount = async (req) => {
   })
 }
 
+// Account Header
+const listAccountHeader = async (req, page, pageSize) => {
+  const { db } = dbLib;
+  const { schemaName  } = req.user;
+  let limit = pageSize && parseInt(pageSize) || 10;
+  let offset = 0;
+  let limitQuery = '';
+  if (page && pageSize) {
+    offset = (page - 1) * pageSize;
+    limitQuery = `limit $1 offset $2`;
+  }
+  console.log(`select *
+    from ${schemaName}.account_header
+    where is_active is true
+    order by account_code asc`)
+  const data =  await db.query(`
+    select *
+    from ${schemaName}.account_header
+    where is_active is true
+    order by account_header_code asc
+    ${limitQuery}
+  `, [limit, offset]);
+
+  const count = await db.oneOrNone(`
+    select count(*)::int total
+    from ${schemaName}.account_header
+    where is_active is true
+  `);
+
+  return {
+    data,
+    count: count.total
+  }
+}
+
+
+
+// Opening Balance
 const listOpeningBalance = async (req) => {
   const { db } = dbLib;
   const { page, page_size } = req.query;
@@ -154,6 +192,7 @@ module.exports = {
   getAccountDetail,
   updateAccount,
   createAccount,
+  listAccountHeader,
   listOpeningBalance,
   updateOpeningBalance
 }

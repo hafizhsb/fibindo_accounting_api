@@ -60,6 +60,22 @@ module.exports = async function(fastify, opts) {
     }
   })
 
+  // Account Header
+  fastify.get('/account-header',
+    {
+      onRequest: [fastify.authenticate]
+    },
+    async (req, reply) => {
+    try {
+      const { page, page_size } = req.query;
+      const { data, count} = await accountService.listAccountHeader(req, page, page_size);
+      reply.send(successRes(data, count))
+    } catch (err) {
+      console.log('err', err);
+      throw err;
+    }
+  })
+
   // Opening Balance
   fastify.get('/opening-balance',
     {
