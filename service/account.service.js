@@ -121,6 +121,29 @@ const listAccountHeader = async (req, page, pageSize) => {
   }
 }
 
+const createAccountHeader = async (req) => {
+  const { db, pgpHelpers } = dbLib;
+  const { body } = req;
+  const data = body;
+  const { schemaName  } = req.user;
+
+  const sql = pgpHelpers.insert(data, null, { table: 'account_header', schema: schemaName });
+  console.log('sqlll', sql);
+  return db.oneOrNone(sql);
+}
+
+const updateAccountHeader = async (req) => {
+  const { db, pgpHelpers } = dbLib;
+  const { id } = req.params;
+  const { body } = req;
+  const data = body;
+  const { schemaName  } = req.user;
+  console.log('dataaaa', data);
+  
+  const updateSql = pgpHelpers.update(data, null, { table: 'account_header', schema: schemaName }) + ` where account_header_id = $1`;
+  console.log('updateSql', updateSql)
+  return db.none(updateSql, [id]);
+}
 
 
 // Opening Balance
@@ -193,6 +216,8 @@ module.exports = {
   updateAccount,
   createAccount,
   listAccountHeader,
+  createAccountHeader,
+  updateAccountHeader,
   listOpeningBalance,
   updateOpeningBalance
 }

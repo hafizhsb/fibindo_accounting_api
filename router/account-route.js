@@ -76,6 +76,34 @@ module.exports = async function(fastify, opts) {
     }
   })
 
+  fastify.post('/account-header',
+    {
+      onRequest: [fastify.authenticate]
+    },
+    async (req, reply) => {
+    try {
+      await accountService.createAccountHeader(req);
+      reply.send(successRes())
+    } catch (err) {
+      console.log('err', err);
+      throw err;
+    }
+  })
+
+  fastify.put('/account-header/:id',
+    {
+      onRequest: [fastify.authenticate]
+    },
+    async (req, reply) => {
+    try {
+      await accountService.updateAccountHeader(req)
+      reply.send(successRes())
+    } catch (err) {
+      console.log('err', err);
+      throw err;
+    }
+  })
+
   // Opening Balance
   fastify.get('/opening-balance',
     {
