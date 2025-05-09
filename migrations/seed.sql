@@ -149,6 +149,9 @@ update
     ${schemaName}.journal_detail for each row execute function ${schemaName}.update_acct_movement();
 
 
+--
+ALTER TABLE ${schemaName}.coa ALTER COLUMN account_code TYPE varchar(30);
+
 
 -- account header
 CREATE TABLE IF NOT EXISTS ${schemaName}.account_header (

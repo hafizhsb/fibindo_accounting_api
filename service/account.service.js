@@ -64,6 +64,9 @@ const createAccount = async (req) => {
   const data = body;
   const { schemaName  } = req.user;
 
+  const openingBalance = data.opening_balance || 0;
+  delete data.opening_balance;
+
   const sql = pgpHelpers.insert(data, null, { table: 'coa', schema: schemaName })  + ' RETURNING account_id';;
   console.log('sqlll', sql);
   return db.tx(async (trx) => {
@@ -77,8 +80,8 @@ const createAccount = async (req) => {
     // create opening balance
     const ob = {
       account_id,
-      debit: 0,
-      credit: 0,
+      debit: data.normal_balance === 1 ? openingBalance : 0,
+      credit: data.normal_balance === 2 ? openingBalance : 0,
       journal_id: -1,
       description: 'Saldo Awal'
     }
