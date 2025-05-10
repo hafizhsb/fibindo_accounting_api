@@ -2,6 +2,7 @@
 const pgp = require('pg-promise');
 const config = require('../config');
 const dbLib = require('../lib/db');
+const { date } = require('joi');
 
 const list = async (req, page, pageSize) => {
   const { db } = dbLib;
@@ -16,8 +17,8 @@ const list = async (req, page, pageSize) => {
   const data =  await db.query(`
     select *
     from ${schemaName}.coa c
-    join ${schemaName}.account_header ah on ah.account_header_id = c.account_header_id
-    where ah.is_active is true and c.is_active is true
+    left join ${schemaName}.account_header ah on ah.account_header_id = c.account_header_id
+    where c.is_active is true
     order by account_code asc
     ${limitQuery}
   `, [limit, offset]);
@@ -52,11 +53,19 @@ const updateAccount = async (req) => {
   const { db, pgpHelpers } = dbLib;
   const { id } = req.params;
   const { body } = req;
-  const data = body;
+  const data = {
+    account_code: body.account_code,
+    account_name: body.account_name,
+    account_header_id: body.account_header_id,
+    bank_id: body.bank_id,
+    normal_balance: body.normal_balance,
+    statement_type: body.statement_type,
+    is_active: body.is_active
+  };
   const { schemaName  } = req.user;
   console.log('dataaaa', data);
   
-  const updateSql = pgpHelpers.update(data, null, { table: 'coa', schema: schemaName }) + `where account_id = $1`;
+  const updateSql = pgpHelpers.update(data, null, { table: 'coa', schema: schemaName }) + ` where account_id = $1`;
   // console.log(updateSql)
   return db.none(updateSql, [id]);
 }
@@ -64,7 +73,16 @@ const updateAccount = async (req) => {
 const createAccount = async (req) => {
   const { db, pgpHelpers } = dbLib;
   const { body } = req;
-  const data = body;
+  const data = {
+    account_code: body.account_code,
+    account_name: body.account_name,
+    account_header_id: body.account_header_id,
+    bank_id: body.bank_id,
+    normal_balance: body.normal_balance,
+    statement_type: body.statement_type,
+    is_active: body.is_active,
+    opening_balance: body.opening_balance
+  };
   const { schemaName  } = req.user;
 
   const openingBalance = data.opening_balance || 0;
