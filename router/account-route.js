@@ -60,6 +60,20 @@ module.exports = async function(fastify, opts) {
     }
   })
 
+  fastify.delete('/coa/delete/:id',
+    {
+      onRequest: [fastify.authenticate]
+    },
+    async (req, reply) => {
+    try {
+      await accountService.deleteAccount(req)
+      reply.send(successRes())
+    } catch (err) {
+      console.log('err', err);
+      throw err;
+    }
+  })
+
   // Account Header
   fastify.get('/account-header',
     {
@@ -111,6 +125,20 @@ module.exports = async function(fastify, opts) {
     async (req, reply) => {
     try {
       await accountService.updateAccountHeader(req)
+      reply.send(successRes())
+    } catch (err) {
+      console.log('err', err);
+      throw err;
+    }
+  })
+
+  fastify.delete('/account-header/delete/:id',
+    {
+      onRequest: [fastify.authenticate]
+    },
+    async (req, reply) => {
+    try {
+      await accountService.deleteAccountHeader(req)
       reply.send(successRes())
     } catch (err) {
       console.log('err', err);

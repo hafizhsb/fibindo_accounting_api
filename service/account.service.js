@@ -92,6 +92,17 @@ const createAccount = async (req) => {
   })
 }
 
+const deleteAccount = async (req) => {
+  const { db, pgpHelpers } = dbLib;
+  const { id } = req.params;
+  const { schemaName  } = req.user;
+  const data = {
+    is_active: false
+  }
+  const updateSql = pgpHelpers.update(data, null, { table: 'coa', schema: schemaName }) + ` where account_id = $1`;
+  return db.none(updateSql, [id]);
+}
+
 // Account Header
 const listAccountHeader = async (req, page, pageSize) => {
   const { db } = dbLib;
@@ -155,6 +166,17 @@ const updateAccountHeader = async (req) => {
   
   const updateSql = pgpHelpers.update(data, null, { table: 'account_header', schema: schemaName }) + ` where account_header_id = $1`;
   console.log('updateSql', updateSql)
+  return db.none(updateSql, [id]);
+}
+
+const deleteAccountHeader = async (req) => {
+  const { db, pgpHelpers } = dbLib;
+  const { id } = req.params;
+  const { schemaName  } = req.user;
+  const data = {
+    is_active: false
+  }
+  const updateSql = pgpHelpers.update(data, null, { table: 'account_header', schema: schemaName }) + ` where account_header_id = $1`;
   return db.none(updateSql, [id]);
 }
 
@@ -233,5 +255,7 @@ module.exports = {
   updateAccountHeader,
   listOpeningBalance,
   updateOpeningBalance,
-  getDetailAccountHeader
+  getDetailAccountHeader,
+  deleteAccount,
+  deleteAccountHeader
 }
