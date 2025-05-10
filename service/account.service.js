@@ -15,16 +15,18 @@ const list = async (req, page, pageSize) => {
   }
   const data =  await db.query(`
     select *
-    from ${schemaName}.coa
-    where is_active is true
+    from ${schemaName}.coa c
+    join ${schemaName}.account_header ah on ah.account_header_id = c.account_header_id
+    where ah.is_active is true and c.is_active is true
     order by account_code asc
     ${limitQuery}
   `, [limit, offset]);
 
   const count = await db.oneOrNone(`
     select count(*)::int total
-    from ${schemaName}.coa
-    where is_active is true
+    from ${schemaName}.coa c
+    join ${schemaName}.account_header ah on ah.account_header_id = c.account_header_id
+    where ah.is_active is true and c.is_active is true
   `);
 
   return {
@@ -39,8 +41,9 @@ const getAccountDetail = async (req) => {
   const { db } = dbLib;
   return db.oneOrNone(`
   select *
-  from ${schemaName}.coa
-  where is_active is true
+  from ${schemaName}.coa c
+  join ${schemaName}.account_header ah on ah.account_header_id = c.account_header_id
+  where ah.is_active is true and c.is_active is true
   and account_id = $1
   `, [id]);
 }
