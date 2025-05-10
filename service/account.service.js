@@ -135,6 +135,13 @@ const createAccountHeader = async (req) => {
   return db.oneOrNone(sql);
 }
 
+const getDetailAccountHeader = async (req) => {
+  const { id } = req.params;
+  const { db } = dbLib;
+  const { schemaName } = req.user;
+  return db.oneOrNone(`select * from ${schemaName}.account_header ah where ah.account_header_id = $1`, [id]);
+};
+
 const updateAccountHeader = async (req) => {
   const { db, pgpHelpers } = dbLib;
   const { id } = req.params;
@@ -222,5 +229,6 @@ module.exports = {
   createAccountHeader,
   updateAccountHeader,
   listOpeningBalance,
-  updateOpeningBalance
+  updateOpeningBalance,
+  getDetailAccountHeader
 }

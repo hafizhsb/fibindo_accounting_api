@@ -90,6 +90,20 @@ module.exports = async function(fastify, opts) {
     }
   })
 
+  fastify.get('/account-header/:id',
+    {
+      onRequest: [fastify.authenticate]
+    },
+    async (req, reply) => {
+    try {
+      const data = await accountService.getDetailAccountHeader(req);
+      reply.send(successRes(data))
+    } catch (err) {
+      console.log('err get detail account header', err);
+      throw err;
+    }
+  })
+
   fastify.put('/account-header/:id',
     {
       onRequest: [fastify.authenticate]
