@@ -43,8 +43,8 @@ const getAccountDetail = async (req) => {
   return db.oneOrNone(`
   select *
   from ${schemaName}.coa c
-  join ${schemaName}.account_header ah on ah.account_header_id = c.account_header_id
-  where ah.is_active is true and c.is_active is true
+  left join ${schemaName}.account_header ah on ah.account_header_id = c.account_header_id
+  where c.is_active is true
   and account_id = $1
   `, [id]);
 }
