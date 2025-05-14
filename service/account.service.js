@@ -26,8 +26,8 @@ const list = async (req, page, pageSize) => {
   const count = await db.oneOrNone(`
     select count(*)::int total
     from ${schemaName}.coa c
-    join ${schemaName}.account_header ah on ah.account_header_id = c.account_header_id
-    where ah.is_active is true and c.is_active is true
+    left join ${schemaName}.account_header ah on ah.account_header_id = c.account_header_id
+    where c.is_active is true
   `);
 
   return {

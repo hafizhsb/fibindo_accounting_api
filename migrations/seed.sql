@@ -165,4 +165,4 @@ CREATE TABLE IF NOT EXISTS ${schemaName}.account_header (
 );
 
 ALTER TABLE ${schemaName}.coa ADD IF NOT EXISTS account_header_id int4 NULL;
-ALTER TABLE ${schemaName}.coa ADD CONSTRAINT coa_account_header_fk FOREIGN KEY (account_header_id) REFERENCES schema_1.account_header(account_header_id) ON DELETE RESTRICT ON UPDATE CASCADE;
+ALTER TABLE ${schemaName}.coa ADD CONSTRAINT coa_account_header_fk FOREIGN KEY (account_header_id) REFERENCES ${schemaName}.account_header(account_header_id) ON DELETE RESTRICT ON UPDATE CASCADE;
