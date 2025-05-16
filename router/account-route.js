@@ -90,56 +90,72 @@ module.exports = async function(fastify, opts) {
     }
   })
 
-  fastify.post('/account-header',
-    {
-      onRequest: [fastify.authenticate]
-    },
-    async (req, reply) => {
-    try {
-      await accountService.createAccountHeader(req);
-      reply.send(successRes())
-    } catch (err) {
-      console.log('err', err);
-      throw err;
-    }
-  })
+  // fastify.post('/account-header',
+  //   {
+  //     onRequest: [fastify.authenticate]
+  //   },
+  //   async (req, reply) => {
+  //   try {
+  //     await accountService.createAccountHeader(req);
+  //     reply.send(successRes())
+  //   } catch (err) {
+  //     console.log('err', err);
+  //     throw err;
+  //   }
+  // })
 
-  fastify.get('/account-header/:id',
-    {
-      onRequest: [fastify.authenticate]
-    },
-    async (req, reply) => {
-    try {
-      const data = await accountService.getDetailAccountHeader(req);
-      reply.send(successRes(data))
-    } catch (err) {
-      console.log('err get detail account header', err);
-      throw err;
-    }
-  })
+  // fastify.get('/account-header/:id',
+  //   {
+  //     onRequest: [fastify.authenticate]
+  //   },
+  //   async (req, reply) => {
+  //   try {
+  //     const data = await accountService.getDetailAccountHeader(req);
+  //     reply.send(successRes(data))
+  //   } catch (err) {
+  //     console.log('err get detail account header', err);
+  //     throw err;
+  //   }
+  // })
 
-  fastify.put('/account-header/:id',
-    {
-      onRequest: [fastify.authenticate]
-    },
-    async (req, reply) => {
-    try {
-      await accountService.updateAccountHeader(req)
-      reply.send(successRes())
-    } catch (err) {
-      console.log('err', err);
-      throw err;
-    }
-  })
+  // fastify.put('/account-header/:id',
+  //   {
+  //     onRequest: [fastify.authenticate]
+  //   },
+  //   async (req, reply) => {
+  //   try {
+  //     await accountService.updateAccountHeader(req)
+  //     reply.send(successRes())
+  //   } catch (err) {
+  //     console.log('err', err);
+  //     throw err;
+  //   }
+  // })
 
-  fastify.delete('/account-header/delete/:id',
+  // fastify.delete('/account-header/delete/:id',
+  //   {
+  //     onRequest: [fastify.authenticate]
+  //   },
+  //   async (req, reply) => {
+  //   try {
+  //     await accountService.deleteAccountHeader(req)
+  //     reply.send(successRes())
+  //   } catch (err) {
+  //     console.log('err', err);
+  //     throw err;
+  //   }
+  // })
+
+  // Account Categories
+  fastify.get('/account-categories',
     {
       onRequest: [fastify.authenticate]
     },
     async (req, reply) => {
     try {
-      await accountService.deleteAccountHeader(req)
-      reply.send(successRes())
+      const { page, page_size } = req.query;
+      const { data, count} = await accountService.listAccountCategories(req, page, page_size);
+      reply.send(successRes(data, count))
     } catch (err) {
       console.log('err', err);
       throw err;

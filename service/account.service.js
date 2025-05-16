@@ -4,6 +4,7 @@ const config = require('../config');
 const dbLib = require('../lib/db');
 const { date } = require('joi');
 
+
 const list = async (req, page, pageSize) => {
   const { db } = dbLib;
   const { schemaName  } = req.user;
@@ -14,20 +15,39 @@ const list = async (req, page, pageSize) => {
     offset = (page - 1) * pageSize;
     limitQuery = `limit $1 offset $2`;
   }
-  const data =  await db.query(`
-    select *
+
+  const data =  await db.query(`with acc as (
+    select c.*, ac.account_category_code, ac.account_category_name,
+    (
+      select row_to_json(row)
+      from (
+          select c2.account_id, c2.account_code, c2.account_name 
+          from ${schemaName}.coa c2
+        where c2.account_id  = c.parent_id
+      ) row
+    ) as parent
     from ${schemaName}.coa c
-    left join ${schemaName}.account_header ah on ah.account_header_id = c.account_header_id
-    where c.is_active is true
+    join ${schemaName}.account_category ac on ac.account_category_id = c.account_category_id
+    where c.deleted_at is null and c.is_active is true
     order by account_code asc
     ${limitQuery}
+    ),
+    ac as (
+      select jd.*
+        from ${schemaName}.journal_detail jd
+        left join ${schemaName}.journal_header jh on jh.journal_id = jd.journal_id
+        where jh.is_opening_balance is true and jd.account_id in (select account_id from acc)
+    )
+    select acc.*, ac.debit, ac.credit
+    from acc
+    left join ac on ac.account_id = acc.account_id
   `, [limit, offset]);
 
   const count = await db.oneOrNone(`
-    select count(*)::int total
+    select count(*)
     from ${schemaName}.coa c
-    left join ${schemaName}.account_header ah on ah.account_header_id = c.account_header_id
-    where c.is_active is true
+    join ${schemaName}.account_category ac on ac.account_category_id = c.account_category_id
+    where c.deleted_at is null and c.is_active is true
   `);
 
   return {
@@ -41,33 +61,13 @@ const getAccountDetail = async (req) => {
   const { schemaName  } = req.user;
   const { db } = dbLib;
   return db.oneOrNone(`
-  select *
+  select c.*, ac.account_category_id, ac.account_category_name, ah.account_header_id, ah.account_header_name
   from ${schemaName}.coa c
-  left join ${schemaName}.account_header ah on ah.account_header_id = c.account_header_id
-  where c.is_active is true
+  join ${schemaName}.account_category ac on ac.account_category_id = c.account_category_id
+  join ${schemaName}.account_header ah on ah.account_header_id = ac.account_header_id
+  where c.is_active is true and c.deleted_at is null
   and account_id = $1
   `, [id]);
-}
-
-const updateAccount = async (req) => {
-  const { db, pgpHelpers } = dbLib;
-  const { id } = req.params;
-  const { body } = req;
-  const data = {
-    account_code: body.account_code,
-    account_name: body.account_name,
-    account_header_id: body.account_header_id,
-    bank_id: body.bank_id,
-    normal_balance: body.normal_balance,
-    statement_type: body.statement_type,
-    is_active: body.is_active
-  };
-  const { schemaName  } = req.user;
-  console.log('dataaaa', data);
-  
-  const updateSql = pgpHelpers.update(data, null, { table: 'coa', schema: schemaName }) + ` where account_id = $1`;
-  // console.log(updateSql)
-  return db.none(updateSql, [id]);
 }
 
 const createAccount = async (req) => {
@@ -76,11 +76,12 @@ const createAccount = async (req) => {
   const data = {
     account_code: body.account_code,
     account_name: body.account_name,
-    account_header_id: body.account_header_id,
-    bank_id: body.bank_id,
+    account_category_id: body.account_category_id,
     normal_balance: body.normal_balance,
     statement_type: body.statement_type,
-    is_active: body.is_active,
+    is_ar: body.is_ar,
+    is_ap: body.is_ap,
+    parent_id: body.parent_id,
     opening_balance: body.opening_balance
   };
   const { schemaName  } = req.user;
@@ -110,12 +111,34 @@ const createAccount = async (req) => {
   })
 }
 
+const updateAccount = async (req) => {
+  const { db, pgpHelpers } = dbLib;
+  const { id } = req.params;
+  const { body } = req;
+  const data = {
+    account_code: body.account_code,
+    account_name: body.account_name,
+    account_category_id: body.account_category_id,
+    normal_balance: body.normal_balance,
+    statement_type: body.statement_type,
+    is_ar: body.is_ar,
+    is_ap: body.is_ap,
+    parent_id: body.parent_id
+  };
+  const { schemaName  } = req.user;
+  console.log('dataaaa', data);
+  
+  const updateSql = pgpHelpers.update(data, null, { table: 'coa', schema: schemaName }) + ` where account_id = $1`;
+  // console.log(updateSql)
+  return db.none(updateSql, [id]);
+}
+
 const deleteAccount = async (req) => {
   const { db, pgpHelpers } = dbLib;
   const { id } = req.params;
   const { schemaName  } = req.user;
   const data = {
-    is_active: false
+    deleted_at: 'now()'
   }
   const updateSql = pgpHelpers.update(data, null, { table: 'coa', schema: schemaName }) + ` where account_id = $1`;
   return db.none(updateSql, [id]);
@@ -132,14 +155,11 @@ const listAccountHeader = async (req, page, pageSize) => {
     offset = (page - 1) * pageSize;
     limitQuery = `limit $1 offset $2`;
   }
-  console.log(`select *
-    from ${schemaName}.account_header
-    where is_active is true
-    order by account_code asc`)
+
   const data =  await db.query(`
     select *
     from ${schemaName}.account_header
-    where is_active is true
+    where is_active is true  and deleted_at is null
     order by account_header_code asc
     ${limitQuery}
   `, [limit, offset]);
@@ -147,7 +167,7 @@ const listAccountHeader = async (req, page, pageSize) => {
   const count = await db.oneOrNone(`
     select count(*)::int total
     from ${schemaName}.account_header
-    where is_active is true
+    where is_active is true and deleted_at is null
   `);
 
   return {
@@ -156,46 +176,78 @@ const listAccountHeader = async (req, page, pageSize) => {
   }
 }
 
-const createAccountHeader = async (req) => {
-  const { db, pgpHelpers } = dbLib;
-  const { body } = req;
-  const data = body;
-  const { schemaName  } = req.user;
+// const createAccountHeader = async (req) => {
+//   const { db, pgpHelpers } = dbLib;
+//   const { body } = req;
+//   const data = body;
+//   const { schemaName  } = req.user;
 
-  const sql = pgpHelpers.insert(data, null, { table: 'account_header', schema: schemaName });
-  console.log('sqlll', sql);
-  return db.oneOrNone(sql);
-}
+//   const sql = pgpHelpers.insert(data, null, { table: 'account_header', schema: schemaName });
+//   console.log('sqlll', sql);
+//   return db.oneOrNone(sql);
+// }
 
-const getDetailAccountHeader = async (req) => {
-  const { id } = req.params;
-  const { db } = dbLib;
-  const { schemaName } = req.user;
-  return db.oneOrNone(`select * from ${schemaName}.account_header ah where ah.account_header_id = $1`, [id]);
-};
+// const getDetailAccountHeader = async (req) => {
+//   const { id } = req.params;
+//   const { db } = dbLib;
+//   const { schemaName } = req.user;
+//   return db.oneOrNone(`select * from ${schemaName}.account_header ah where ah.account_header_id = $1`, [id]);
+// };
 
-const updateAccountHeader = async (req) => {
-  const { db, pgpHelpers } = dbLib;
-  const { id } = req.params;
-  const { body } = req;
-  const data = body;
-  const { schemaName  } = req.user;
-  console.log('dataaaa', data);
+// const updateAccountHeader = async (req) => {
+//   const { db, pgpHelpers } = dbLib;
+//   const { id } = req.params;
+//   const { body } = req;
+//   const data = body;
+//   const { schemaName  } = req.user;
+//   console.log('dataaaa', data);
   
-  const updateSql = pgpHelpers.update(data, null, { table: 'account_header', schema: schemaName }) + ` where account_header_id = $1`;
-  console.log('updateSql', updateSql)
-  return db.none(updateSql, [id]);
-}
+//   const updateSql = pgpHelpers.update(data, null, { table: 'account_header', schema: schemaName }) + ` where account_header_id = $1`;
+//   console.log('updateSql', updateSql)
+//   return db.none(updateSql, [id]);
+// }
 
-const deleteAccountHeader = async (req) => {
-  const { db, pgpHelpers } = dbLib;
-  const { id } = req.params;
+// const deleteAccountHeader = async (req) => {
+//   const { db, pgpHelpers } = dbLib;
+//   const { id } = req.params;
+//   const { schemaName  } = req.user;
+//   const data = {
+//     is_active: false
+//   }
+//   const updateSql = pgpHelpers.update(data, null, { table: 'account_header', schema: schemaName }) + ` where account_header_id = $1`;
+//   return db.none(updateSql, [id]);
+// }
+
+// Account Categories
+const listAccountCategories = async (req, page, pageSize) => {
+  const { db } = dbLib;
   const { schemaName  } = req.user;
-  const data = {
-    is_active: false
+  let limit = pageSize && parseInt(pageSize) || 10;
+  let offset = 0;
+  let limitQuery = '';
+  if (page && pageSize) {
+    offset = (page - 1) * pageSize;
+    limitQuery = `limit $1 offset $2`;
   }
-  const updateSql = pgpHelpers.update(data, null, { table: 'account_header', schema: schemaName }) + ` where account_header_id = $1`;
-  return db.none(updateSql, [id]);
+  
+  const data =  await db.query(`
+    select *
+    from ${schemaName}.account_category
+    where is_active is true  and deleted_at is null
+    order by account_category_code asc
+    ${limitQuery}
+  `, [limit, offset]);
+
+  const count = await db.oneOrNone(`
+    select count(*)::int total
+    from ${schemaName}.account_category
+    where is_active is true and deleted_at is null
+  `);
+
+  return {
+    data,
+    count: count.total
+  }
 }
 
 
@@ -212,6 +264,7 @@ const listOpeningBalance = async (req) => {
     offset = (page - 1) * pageSize;
     limitQuery = `limit $1 offset $2`;
   }
+
 
   const data =  await db.query(`
     select c.*, jd.*
@@ -269,11 +322,8 @@ module.exports = {
   updateAccount,
   createAccount,
   listAccountHeader,
-  createAccountHeader,
-  updateAccountHeader,
+  listAccountCategories,
   listOpeningBalance,
   updateOpeningBalance,
-  getDetailAccountHeader,
-  deleteAccount,
-  deleteAccountHeader
+  deleteAccount
 }
