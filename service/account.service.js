@@ -8,6 +8,7 @@ const { date } = require('joi');
 const list = async (req, page, pageSize) => {
   const { db } = dbLib;
   const { schemaName  } = req.user;
+  let { keyword, is_account, is_sub_account  } = req.query;
   let limit = pageSize && parseInt(pageSize) || 10;
   let offset = 0;
   let limitQuery = '';
@@ -15,7 +16,19 @@ const list = async (req, page, pageSize) => {
     offset = (page - 1) * pageSize;
     limitQuery = `limit $1 offset $2`;
   }
-
+  
+  let where = 'where c.deleted_at is null and c.is_active is true';
+  if (keyword) {
+    keyword = decodeURIComponent(keyword);
+    where += ' and (c.account_code ~* $3 or c.account_name ~* $3)';
+  }
+  console.log('keyword', keyword);
+  if (is_account === 'true') {
+    where += ' and c.parent_id = 0';
+  }
+  if (is_sub_account === 'true') {
+    where += ' and c.parent_id != 0';
+  }
   const data =  await db.query(`with acc as (
     select c.*, ac.account_category_code, ac.account_category_name,
     (
@@ -28,7 +41,7 @@ const list = async (req, page, pageSize) => {
     ) as parent
     from ${schemaName}.coa c
     join ${schemaName}.account_category ac on ac.account_category_id = c.account_category_id
-    where c.deleted_at is null and c.is_active is true
+    ${where}
     order by account_code asc
     ${limitQuery}
     ),
@@ -41,14 +54,14 @@ const list = async (req, page, pageSize) => {
     select acc.*, ac.debit, ac.credit
     from acc
     left join ac on ac.account_id = acc.account_id
-  `, [limit, offset]);
+  `, [limit, offset, keyword]);
 
   const count = await db.oneOrNone(`
-    select count(*)
+    select count(*) total
     from ${schemaName}.coa c
     join ${schemaName}.account_category ac on ac.account_category_id = c.account_category_id
-    where c.deleted_at is null and c.is_active is true
-  `);
+    ${where}
+  `, [limit, offset, req.query.keyword]);
 
   return {
     data,
