@@ -10,7 +10,7 @@ CREATE TABLE IF NOT EXISTS ${schemaName}.coa (
 	bank_id int4 NULL,
 	normal_balance int4 NOT NULL,
 	statement_type int4 NOT NULL,
-	CONSTRAINT ix_chartofaccounts_accountcode UNIQUE (account_code),
+	CONSTRAINT uidx_coa_accountcode UNIQUE (account_code) where (deleted_at is null),
 	CONSTRAINT pk_chartofaccounts PRIMARY KEY (account_id)
 );
 

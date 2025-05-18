@@ -8,7 +8,7 @@ const { date } = require('joi');
 const list = async (req, page, pageSize) => {
   const { db } = dbLib;
   const { schemaName  } = req.user;
-  let { keyword, is_account, is_sub_account  } = req.query;
+  let { keyword, is_account, is_sub_account, account_category_id  } = req.query;
   let limit = pageSize && parseInt(pageSize) || 10;
   let offset = 0;
   let limitQuery = '';
@@ -22,12 +22,14 @@ const list = async (req, page, pageSize) => {
     keyword = decodeURIComponent(keyword);
     where += ' and (c.account_code ~* $3 or c.account_name ~* $3)';
   }
-  console.log('keyword', keyword);
   if (is_account === 'true') {
     where += ' and c.parent_id = 0';
   }
   if (is_sub_account === 'true') {
     where += ' and c.parent_id != 0';
+  }
+  if (account_category_id) {
+    where += ' and c.account_category_id = $4';
   }
   const data =  await db.query(`with acc as (
     select c.*, ac.account_category_code, ac.account_category_name,
@@ -54,14 +56,14 @@ const list = async (req, page, pageSize) => {
     select acc.*, ac.debit, ac.credit
     from acc
     left join ac on ac.account_id = acc.account_id
-  `, [limit, offset, keyword]);
+  `, [limit, offset, keyword, account_category_id]);
 
   const count = await db.oneOrNone(`
     select count(*) total
     from ${schemaName}.coa c
     join ${schemaName}.account_category ac on ac.account_category_id = c.account_category_id
     ${where}
-  `, [limit, offset, req.query.keyword]);
+  `, [limit, offset, keyword, account_category_id]);
 
   return {
     data,
@@ -74,7 +76,15 @@ const getAccountDetail = async (req) => {
   const { schemaName  } = req.user;
   const { db } = dbLib;
   return db.oneOrNone(`
-  select c.*, ac.account_category_id, ac.account_category_name, ah.account_header_id, ah.account_header_name
+  select c.*, ac.account_category_id, ac.account_category_name, ah.account_header_id, ah.account_header_name,
+  (
+    select row_to_json(row)
+    from (
+        select c2.account_id, c2.account_code, c2.account_name 
+        from ${schemaName}.coa c2
+      where c2.account_id  = c.parent_id
+    ) row
+  ) as parent
   from ${schemaName}.coa c
   join ${schemaName}.account_category ac on ac.account_category_id = c.account_category_id
   join ${schemaName}.account_header ah on ah.account_header_id = ac.account_header_id
