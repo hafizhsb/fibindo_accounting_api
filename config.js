@@ -14,7 +14,13 @@ const config = {
   SMTP_PORT: process.env.SMTP_PORT || '465',
   SMTP_USER: process.env.SMTP_USER || 'no-reply@fibindo.co.id',
   SMTP_PASSWORD: process.env.SMTP_PASSWORD || 'fibindo@1234',
-  SITE_URL: process.env.SITE_URL || 'https://fibindo.co.id'
+  SITE_URL: process.env.SITE_URL || 'https://fibindo.co.id',
+  // AWS
+  AWS_ACCESS_KEY_ID: process.env.AWS_ACCESS_KEY_ID || 'test',
+  AWS_SECRET_ACCESS_KEY: process.env.AWS_SECRET_ACCESS_KEY || 'pass',
+  AWS_S3_REGION: process.env.AWS_S3_REGION || 'ap-southeast-1',
+  AWS_S3_BUCKET: process.env.AWS_S3_BUCKET || 'fibindo',
+
 }
 
 module.exports = config;

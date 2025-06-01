@@ -8,6 +8,8 @@ const accountRoute = require('./router/account-route');
 const contactRoute = require('./router/contact-route');
 const journalRoute = require('./router/journal-route');
 const ledgerRoute = require('./router/ledger-route');
+const uploadRoute = require('./router/upload-route');
+
 const { migrateDb } = require('./lib/db');
 
 // file uploads
@@ -16,7 +18,7 @@ fastify.register(multipart, {
     // fieldNameSize: 100, // Max field name size in bytes
     // fieldSize: 100,     // Max field value size in bytes
     // fields: 10,         // Max number of non-file fields
-    fileSize: 100000000,  // For multipart forms, the max file size in bytes
+    fileSize: 1000000,  // For multipart forms, the max file size in bytes (on bytes)
     // files: 1,           // Max number of file fields
     // headerPairs: 2000,  // Max number of header key=>value pairs
     // parts: 1000         // For multipart forms, the max number of parts (fields + files)
@@ -31,6 +33,7 @@ fastify.register(accountRoute, { prefix: '/accounts'})
 fastify.register(contactRoute, { prefix: '/contacts'})
 fastify.register(journalRoute, { prefix: '/journals'})
 fastify.register(ledgerRoute, { prefix: '/ledger'})
+fastify.register(uploadRoute, { prefix: '/uploads'})
 
 //cross-origin
 fastify.register(require('@fastify/cors'), {
