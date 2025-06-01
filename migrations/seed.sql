@@ -279,6 +279,7 @@ INSERT INTO ${schemaName}.journal_detail (journal_detail_id, journal_id, account
 -- Add colom
 ALTER TABLE ${schemaName}.journal_header ADD journal_no citext NULL;
 ALTER TABLE ${schemaName}.journal_header ADD CONSTRAINT journal_header_unique UNIQUE (journal_no);
+ALTER TABLE ${schemaName}.journal_header ADD journal_attachment_url citext NULL;
 
 
 ALTER TABLE ${schemaName}.journal_detail ADD contact_id int4 NULL;

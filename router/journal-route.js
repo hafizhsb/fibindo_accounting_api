@@ -18,10 +18,14 @@ module.exports = async function(fastify, opts) {
     }
   })
 
-  fastify.get('/:id', async (req, reply) => {
+  fastify.get('/:id', 
+    {
+      onRequest: [fastify.authenticate]
+    },
+    async (req, reply) => {
     try {
       const { id } = req.params;
-      const row = await accountService.getAccountDetail(id)
+      const row = await journalService.getJournalDetail(req)
       reply.send(successRes(row))
     } catch (err) {
       console.log('err', err);
@@ -43,12 +47,13 @@ module.exports = async function(fastify, opts) {
     }
   })
 
-  fastify.put('/:id', async (req, reply) => {
+  fastify.put('/:id',
+    {
+      onRequest: [fastify.authenticate]
+    },
+    async (req, reply) => {
     try {
-      const { id } = req.params;
-      const { body } = req;
-      console.log('reqqq', id, body);
-      await contactService.updateContact(id, body)
+      await journalService.updateJournal(req)
       reply.send(successRes())
     } catch (err) {
       console.log('err', err);

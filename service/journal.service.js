@@ -17,10 +17,7 @@ const list = async (req) => {
   }
 
   const data =  await db.query(`
-    select jh.*, 
-    lpad(jh.journal_id::varchar(50), 10,
-      'GJ' || '-0000000000'
-    ) as journal_no,
+    select jh.*,
     (select sum(debit) from ${schemaName}.journal_detail where journal_id = jh.journal_id ) as debit,
     (select sum(credit) from ${schemaName}.journal_detail where journal_id = jh.journal_id ) as credit
     from ${schemaName}.journal_header jh
@@ -39,22 +36,24 @@ const list = async (req) => {
   }
 }
 
-const getAccountDetail = async (id) => {
+const getJournalDetail = async (req) => {
+  const { id } = req.params;
+  const { schemaName  } = req.user;
   const { db } = dbLib;
   return db.oneOrNone(`
-  select *
-  from contact
-  where account_id = $1
+  select *,
+  (select sum(debit) from ${schemaName}.journal_detail where journal_id = jh.journal_id ) as debit,
+  (select sum(credit) from ${schemaName}.journal_detail where journal_id = jh.journal_id ) as credit,
+  (select array_to_json(array_agg(d))
+    from (
+      select *
+      from ${schemaName}.journal_detail jd
+      where jd.journal_id = jh.journal_id
+    ) d
+  ) as items
+  from ${schemaName}.journal_header jh
+  where jh.journal_id = $1
   `, [id]);
-}
-
-const updateContact = async (id, data) => {
-  const { db, pgpHelpers } = dbLib;
-  console.log('dataaaa', data);
-  
-  const updateSql = pgpHelpers.update(data, null, 'contact') + `where contact_id = $1`;
-  // console.log(updateSql)
-  return db.none(updateSql, [id]);
 }
 
 const createJournal = async (req) => {
@@ -62,12 +61,14 @@ const createJournal = async (req) => {
   const { body: data } = req;
   const { schemaName  } = req.user;
 
-  const sql = pgpHelpers.insert(data, null, 'contact');
   return db.tx(async (trx) => {
     const sqlJH = pgpHelpers.insert({
       transaction_date: data.transaction_date,
       notes: data.notes,
-      created_date: 'now()'
+      created_date: 'now()',
+      journal_no: data.journal_no,
+      source_doc_no: data.source_doc_no,
+      journal_attachment_url: data.journal_attachment_url
     }, null, { table: 'journal_header', schema: schemaName }) + ' RETURNING journal_id';
     const { journal_id } = await trx.oneOrNone(sqlJH);
 
@@ -75,7 +76,38 @@ const createJournal = async (req) => {
     details.forEach((detail) => {
       detail.journal_id =  journal_id;
     });
-    const sqlJD =  pgpHelpers.insert(details, ['account_id', 'journal_id', 'debit', 'credit', 'notes'], { table: 'journal_detail', schema: schemaName })
+    const sqlJD =  pgpHelpers.insert(details, ['account_id', 'journal_id', 'debit', 'credit', 'contact_id'], { table: 'journal_detail', schema: schemaName })
+
+    await trx.none(sqlJD);
+  })
+}
+
+const updateJournal = async (req) => {
+  const { db, pgpHelpers } = dbLib;
+  const { id } = req.params;
+  const { body: data } = req;
+  const { schemaName  } = req.user;
+
+  return db.tx(async (trx) => {
+    const sqlJH = pgpHelpers.update({
+      transaction_date: data.transaction_date,
+      notes: data.notes,
+      created_date: 'now()',
+      journal_no: data.journal_no,
+      source_doc_no: data.source_doc_no,
+      journal_attachment_url: data.journal_attachment_url
+    }, null, { table: 'journal_header', schema: schemaName })  + ` where journal_id = $1`;
+    await trx.oneOrNone(sqlJH, [id]);
+
+    // delete old transaction
+    trx.query(`delete from ${schemaName}.journal_detail where journal_id = $1`, [id]);
+
+    const details = data.items;
+    details.forEach((detail) => {
+      detail.journal_id =  id;
+    });
+    const sqlJD =  pgpHelpers.insert(details, ['account_id', 'journal_id', 'debit', 'credit', 'contact_id'], { table: 'journal_detail', schema: schemaName });
+    console.log('sqlJD', sqlJD);
 
     await trx.none(sqlJD);
   })
@@ -83,7 +115,7 @@ const createJournal = async (req) => {
 
 module.exports = {
   list,
-  getAccountDetail,
-  updateContact,
+  getJournalDetail,
+  updateJournal,
   createJournal
 }
