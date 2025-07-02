@@ -46,8 +46,10 @@ const getJournalDetail = async (req) => {
   (select sum(credit) from ${schemaName}.journal_detail where journal_id = jh.journal_id ) as credit,
   (select array_to_json(array_agg(d))
     from (
-      select *
+      select jd.*, c.contact_name, coa.account_name
       from ${schemaName}.journal_detail jd
+      left join ${schemaName}.contact c on c.contact_id = jd.contact_id
+      left join ${schemaName}.coa on coa.account_id = jd.account_id
       where jd.journal_id = jh.journal_id
     ) d
   ) as items
