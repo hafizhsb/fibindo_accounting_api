@@ -288,3 +288,7 @@ ALTER TABLE ${schemaName}.journal_detail ADD CONSTRAINT journal_detail_contact_f
 
 ALTER TABLE ${schemaName}.acct_movement ADD contact_id int4 NULL;
 ALTER TABLE ${schemaName}.acct_movement ADD CONSTRAINT acct_movement_contact_fk FOREIGN KEY (contact_id) REFERENCES schema_1.contact(contact_id) ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- alter journal detail to default 0
+ALTER TABLE ${schemaName}.journal_detail ALTER credit set default 0
+ALTER TABLE ${schemaName}.journal_detail ALTER debit set default 0
