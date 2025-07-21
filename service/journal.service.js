@@ -115,9 +115,21 @@ const updateJournal = async (req) => {
   })
 }
 
+const deleteJournal = async (req) => {
+  const { db } = dbLib;
+  const { id } = req.params;
+  const { schemaName  } = req.user;
+  const result = await db.result(`delete from ${schemaName}.journal_header where journal_id = $1`, [id])
+  if (result.rowCount === 0) {
+    console.error('error delete journal', result)
+    throw new Error("journal not found");
+  }
+}
+
 module.exports = {
   list,
   getJournalDetail,
   updateJournal,
-  createJournal
+  createJournal,
+  deleteJournal
 }

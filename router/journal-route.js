@@ -60,4 +60,20 @@ module.exports = async function(fastify, opts) {
       throw err;
     }
   })
+
+
+  fastify.delete('/:id',
+    {
+      onRequest: [fastify.authenticate]
+    },
+    async (req, reply) => {
+    try {
+      await journalService.deleteJournal(req)
+      reply.send(successRes())
+    } catch (err) {
+      console.log('err', err);
+      throw err;
+    }
+  })
+
 }
