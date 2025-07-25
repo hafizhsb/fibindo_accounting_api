@@ -5,12 +5,26 @@ const dbLib = require('../lib/db');
 
 const list = async (req) => {
   const { db } = dbLib;
-  const { page, page_size: pageSize } = req.query;
+  const { page, page_size: pageSize, keyword, start_date, end_date } = req.query;
   const { schemaName  } = req.user;
 
   let limit = pageSize && parseInt(pageSize) || 10;
   let offset = 0;
   let limitQuery = '';
+  let whereClause = 'WHERE 1=1'
+
+  if (keyword) {
+    whereClause = whereClause.concat(' AND jh.journal_no ilike $3');
+  }
+
+  if (start_date) {
+    whereClause = whereClause.concat(' AND jh.created_date >= $4');
+  }
+
+  if (end_date) {
+    whereClause = whereClause.concat(' AND jh.created_date <= $5');
+  }
+
   if (page && pageSize) {
     offset = (page - 1) * pageSize;
     limitQuery = `limit $1 offset $2`;
@@ -20,15 +34,15 @@ const list = async (req) => {
     select jh.*,
     (select sum(debit) from ${schemaName}.journal_detail where journal_id = jh.journal_id ) as debit,
     (select sum(credit) from ${schemaName}.journal_detail where journal_id = jh.journal_id ) as credit
-    from ${schemaName}.journal_header jh
+    from ${schemaName}.journal_header jh ${whereClause}
     order by transaction_date desc
     ${limitQuery}
-  `, [limit, offset]);
+  `, [limit, offset, `%${keyword}%`, start_date, end_date]);
 
   const count = await db.oneOrNone(`
     select count(*)::int total
-    from ${schemaName}.journal_header
-  `);
+    from ${schemaName}.journal_header jh ${whereClause} ${limitQuery}
+  `, [limit, offset, `%${keyword}%`, start_date, end_date]);
 
   return {
     data,
